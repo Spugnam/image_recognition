@@ -24,16 +24,17 @@ flowers\
         roses\
             ....jpg
 """
-os.getcwd()
+
+# directories
 ROOT_DIR = ".."  # project root from file path
 # destination folder
 DATA_DIR = "data"
 DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images")
 
+# source file with categories
 categories_file = "categories/categories.csv"
 categories_file_path = os.path.join(ROOT_DIR, DATA_DIR, categories_file)
 
-print(categories_file_path)
 # source file with image urls
 image_filepath = os.path.join(ROOT_DIR, DATA_DIR,
                               "raw_urls/data-with-images-000000000000.csv")
@@ -151,12 +152,6 @@ def is_valid_sample(row_dict, parent_cat_set, countries={'BR'},
         return(False)
     return(True)
 
-# test
-# for i, row_dict in enumerate(it.islice(f, 0, 20)):
-#     print(row_dict)
-#     print(cat_dict[row_dict['category_name']])
-#     print(is_valid_sample(row_dict, parent_cat_set))
-
 
 if __name__ == '__main__':
 
@@ -173,7 +168,7 @@ if __name__ == '__main__':
     log_filepath = os.path.join(DATASET_DIR, log_file)
 
     with open(log_filepath, mode='w') as log:
-        for i, row_dict in enumerate(it.islice(f, 0, 2)):
+        for i, row_dict in enumerate(it.islice(f, 0, 300)):
 
             # track progress
             if i > 0 and i % 100 == 0:
@@ -185,6 +180,7 @@ if __name__ == '__main__':
 
             # retrieve image and update title
             try:
+                # TODO: batch image download
                 im = image_from_url(row_dict['image']).resize((299, 299))
             except Exception as mess:
                 log.write("{}: {}".format(mess, row_dict['title']))
@@ -221,4 +217,13 @@ if __name__ == '__main__':
         print("Done. Parsed {} images".format(i))
         fcount(path=DATASET_DIR)
 
-# EoF
+
+# Tests
+
+# for i, row_dict in enumerate(it.islice(f, 0, 2)):
+#     print(row_dict)
+#     print(cat_dict[row_dict['category_name']])
+#     print(is_valid_sample(row_dict, parent_cat_set))
+# OrderedDict([('category_name', '5590732f531b3b92438b456d'), ('title', 'Vendo ou troco'), ('country', 'BR'), ('image', 'https://lh3.googleusercontent.com/erfxERAP-fBPlU69XogrSNvdR-prbQvnffZleXH7G-Qmf4COq_KBKjnEa3W6cCd_GmwDqX8VeAdkwoc2FbPs=s500-e365-nu?bk=FGx4i0EUTcXjnhd0s0M4MNYeQ7MTwiwLqfG7sYv8nLjKA66YkJyqkNd0pNqPrs%2BmzI3SPE5mjqvozwUfqTxT0Sr8QE5feFU9JZH5T53OckyAe2hLZ3oU8XO1b1a%2BvNwCHdo0vLhw4kqkwehJMbVLvTS1pBhAtOdeEu5OyRf4s8KCR8qOEBhrXewNkyS742jUDBmMv7ht2puk74HgFIBcboohO2agCYJLe4tdZOHpWaCQkVVD0vEAWGDDY2nrE4HDeJSx4yR%2FIB0%2BjlZHKKv52N%2BC4fEsqAjdkHzX9tjCcqobMumVw4fmAj64ImOmR4b2nWiO3TtpLc01sH%2BVn%2FIk%2FQXDUv6pKUytzipnHQA7LTCtv%2F9R9PNPvvBK8XWA%2BXAI7T2YjoJ3SzYlnGgtDHO0nnBeGcfyVegralByU9udzx%2FD6JR8JRDwKYbnMMZMLtAmYP0IrO021p3J23VKxGv0oOcr9%2BLUAAP8pZ%2F4UT9tSNaOMU%2Bjb18LRtf%2Fy2yYvxICKgdoSvZa6ZRWa1cnFMswOA%3D%3D')])
+# Fashion & Accessories - Women - Shoes
+# True
