@@ -6,11 +6,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import sys
+# import sys
 import tensorflow as tf
 
-sys.path.append(r"/Users/Quentin/Documents/Tensorflow_models/research/slim/")  # noqa
-from datasets import dataset_utils
+# sys.path.append(r"/Users/Quentin/Documents/Tensorflow_models/research/slim/")  # noqa
+import dataset_utils
 
 slim = tf.contrib.slim
 

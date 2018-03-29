@@ -56,7 +56,6 @@ def main():
     parent_categories.head()
     parent_IDs_dict = pd.Series(data=parent_categories['ID'].values,
                                 index=parent_categories['Parent']).to_dict()
-    parent_IDs_dict
 # {'Animals': '55906718531b3b2b478b456c',
 #  'Art & Collectibles': '559064a8531b3b95438b456c',
 # ...
@@ -67,7 +66,6 @@ def main():
     parent_IDs_mapping_dict =\
         pd.Series(data=categories['Parent_ID'].values,
                   index=categories['ID']).to_dict(into=dict)
-    parent_IDs_mapping_dict
 # {'55906545531b3baa628b4568': '55906545531b3baa628b4568',
 #  '559068f8531b3b093e8b4568': '55906545531b3baa628b4568',
 #  '55906905531b3b93438b456e': '55906545531b3baa628b4568'}

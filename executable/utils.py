@@ -2,8 +2,7 @@
 
 import sys
 import tensorflow as tf
-sys.path.append(r"/Users/Quentin/Documents/Tensorflow_models/research/slim/")  # noqa
-from preprocessing import inception_preprocessing
+import inception_preprocessing
 from tensorflow.contrib import slim
 
 def load_batch(dataset, batch_size=32, height=299, width=299,
