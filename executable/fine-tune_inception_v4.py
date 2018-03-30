@@ -53,7 +53,6 @@ with tf.Graph().as_default():
     dataset = popsy_dataset.get_split('train', popsy_dataset_dir)
     images, _, labels, filename = load_batch(
         dataset, batch_size=512, height=image_size, width=image_size)
-    print("filename from load_batch: ", filename)
 
     # use the default arg scope to configure the batch norm parameters.
     with slim.arg_scope(inception_v4_arg_scope()):

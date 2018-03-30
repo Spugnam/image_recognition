@@ -42,8 +42,6 @@ with tf.Graph().as_default():
             init_fn(sess)
             np_probabilities, np_images_raw, np_labels, np_filenames = sess.run(
                 [probabilities, images_raw, labels, filenames])
-            print("np_probabilities", np_probabilities)
-            print("np_filenames", np_filenames)
 
             # manual accuracy TODO use slim.metrics
             accuracy = 0
@@ -51,15 +49,14 @@ with tf.Graph().as_default():
                 image = np_images_raw[i, :, :, :]
                 true_label = np_labels[i]
                 predicted_label = np.argmax(np_probabilities[i, :])
-                # print("predicted_label", predicted_label)
-                # print("labels_to_names", dataset.labels_to_names)
                 predicted_name = dataset.labels_to_names[predicted_label]
                 true_name = dataset.labels_to_names[true_label]
                 image_title = np_filenames[i]
                 if predicted_name == true_name:
                     accuracy += 1 / batch_size
-                print('Title: [{}], Ground Truth: [{}], Prediction [{}]'.format(
-                    image_title, true_name, predicted_name), end='\n')
+                print('Title: [{}]'.format(image_title), end='\n')
+                print('Ground Truth: [{}], Prediction [{}]'.format(
+                      true_name, predicted_name), end='\n')
                 # plt.figure()
                 # plt.imshow(image.astype(np.uint8))
                 # plt.title('Ground Truth: [{}], Prediction [{}]'.format(

@@ -86,7 +86,6 @@ def get_split(split_name, dataset_dir, file_pattern='popsy_%s_*.tfrecord',
 
     # Count number of classes
     num_classes = _get_num_classes(dataset_dir, file_pattern_for_counting)
-    print("num_classes calculated:", num_classes)
 
     # Allowing None in the signature so that dataset_factory can use the default.
     if reader is None:
