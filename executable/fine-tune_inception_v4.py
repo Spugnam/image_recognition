@@ -2,8 +2,6 @@
 
 import os
 import popsy_dataset
-# from nets import inception
-# from preprocessing import inception_preprocessing
 import tensorflow as tf
 from utils import load_batch
 from inception_v4 import inception_v4, inception_v4_arg_scope
@@ -16,6 +14,16 @@ checkpoints_dir = '/tmp/checkpoints'
 train_dir = '/tmp/inception_finetuned/'
 popsy_dataset_dir = '../data/images'
 
+# # Preliminary Steps to download inception_v4 checkpoint
+# import dataset_utils
+#
+# url = "http://download.tensorflow.org/models/inception_v4_2016_09_09.tar.gz"
+# checkpoints_dir = '/tmp/checkpoints'
+#
+# if not tf.gfile.Exists(checkpoints_dir):
+#     tf.gfile.MakeDirs(checkpoints_dir)
+#
+# dataset_utils.download_and_uncompress_tarball(url, checkpoints_dir)
 
 def get_init_fn():
     """Returns a function run by the chief worker to warm-start the training.
@@ -39,31 +47,13 @@ def get_init_fn():
         variables_to_restore)
 
 
-# Steps to download inception_v4 checkpoint
-# from datasets import dataset_utils
-#
-# url = "http://download.tensorflow.org/models/inception_v4_2016_09_09.tar.gz"
-# checkpoints_dir = '/tmp/checkpoints'
-#
-# if not tf.gfile.Exists(checkpoints_dir):
-#     tf.gfile.MakeDirs(checkpoints_dir)
-#
-# dataset_utils.download_and_uncompress_tarball(url, checkpoints_dir)
-
 with tf.Graph().as_default():
     tf.logging.set_verbosity(tf.logging.INFO)
 
     dataset = popsy_dataset.get_split('train', popsy_dataset_dir)
-    images, _, labels = load_batch(
-        dataset, batch_size=128, height=image_size, width=image_size)
-
-    # tests (remove)
-    # dataset
-    # images
-    # dataset.num_classes
-    # # labels.eval(session=tf.Session())
-    # with tf.session as sess:
-    #     print("Labels: ", labels.eval())
+    images, _, labels, filename = load_batch(
+        dataset, batch_size=512, height=image_size, width=image_size)
+    print("filename from load_batch: ", filename)
 
     # use the default arg scope to configure the batch norm parameters.
     with slim.arg_scope(inception_v4_arg_scope()):
@@ -79,7 +69,7 @@ with tf.Graph().as_default():
     tf.summary.scalar('losses/Total_Loss', total_loss)
 
     # Specify the optimizer and create the train op:
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.005)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
     train_op = slim.learning.create_train_op(total_loss, optimizer)
 
     # Run the training:
