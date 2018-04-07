@@ -1,6 +1,8 @@
 #!/usr/local/bin//python3
 
 import os
+import sys
+from collections import defaultdict
 import csv
 from datetime import datetime
 import re
@@ -25,30 +27,62 @@ flowers\
             ....jpg
 """
 
+# Parameters
+
+# number of images to parse
+num_images = 5000
+# min number of images per category (for undersampling)
+min_per_cat = 5
+# prevent exact duplicate images
+check_duplicates = True
+# use parent categories
+use_parent_cat = True
+# parent categories
+# 559066e7531b3b96438b456c Services
+# 55906545531b3baa628b4568 Electronics & Computers
+# 55379c4d531b3b4c048b456b Real & Estate
+# 55906559531b3b093e8b4567 Kids & Baby
+# 55906530531b3b93438b456d Fashion & Accessories
+# 559066d0531b3b2b478b456b Cars & Motors
+# 559064a8531b3b95438b456c Art & Collectibles
+# 5590654d531b3b92438b4568 Home & Garden
+# 559066dd531b3b95438b456d Jobs
+# 559066c7531b3bab628b4568 Tickets
+# 55906718531b3b2b478b456c Animals
+# 5590653b531b3b013b8b456a Sports & Outdoors
+# 5590670f531b3bab628b4569 Cellphones & Tablets
+
+# exclude categories with keywords:
+exclude = ['Other', 'Estate', 'Services', 'Jobs', 'Tickets']
+
 # directories
 ROOT_DIR = ".."  # project root from file path
 # destination folder
 DATA_DIR = "data"
-DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images")
-
+DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images/popsy")
 # source file with categories
 categories_file = "categories/categories.csv"
 categories_file_path = os.path.join(ROOT_DIR, DATA_DIR, categories_file)
-
 # source file with image urls
 image_filepath = os.path.join(ROOT_DIR, DATA_DIR,
                               "raw_urls/data-with-images-000000000000.csv")
 
 
-def fcount(path=DATASET_DIR):
+def folder_stats(path=DATASET_DIR):
     """
-    Returns number of folders and files at path
+    Returns number of files in each folder inside path
     """
+    print("\nStatistics:", end='\n')
     num_dir = 0
     num_files = 0
     for root, dirs, files in os.walk(path):
-        num_dir += len(dirs)
-        num_files += len(files)
+        if root == path:
+            num_dir = len(dirs)
+        if root != path:
+            print("Class {:60} {:>5} images".format(os.path.basename(root),
+                                               len(files)))
+            # num_dir += len(dirs)
+            num_files += len(files)
     print("number of classes: {}\
           \nnumber of images loaded: {}".format(num_dir, num_files))
 
@@ -129,26 +163,27 @@ def load_categories(file_path):
     parent_IDs_dict = pd.Series(data=parent_categories['ID'].values,
                                 index=parent_categories['Parent']).to_dict()
     categories['Parent_ID'] = categories['Parent'].map(parent_IDs_dict)
-    parents_cat_mapping_dict =\
+    parents_cat_mapping =\
         pd.Series(data=categories['Parent_ID'].values,
                   index=categories['ID']).to_dict(into=dict)
+    return(cat_dict, parent_cat_set, parents_cat_mapping)
 
-    return(cat_dict, parent_cat_set, parents_cat_mapping_dict)
 
-
-def is_valid_sample(row_dict, parent_cat_set, countries={'BR'},
-                    exclude_=['Other', 'Estate', 'Services']):
+def is_valid_sample(row_dict, parent_cat_set,
+                    exclude_parents=False,
+                    countries={'BR'},
+                    exclude=exclude):
     """
     Filter countries
     Exclude parent categories
     Exclude child categories 'Other'
-    Exclude specific categories: real estate, services, tickets
+    Exclude specific categories e.g. real estate, services, tickets
     """
     if row_dict['country'] not in countries:
         return(False)
-    elif row_dict['category_name'] in parent_cat_set:
+    elif exclude_parents & (row_dict['category_name'] in parent_cat_set):
         return(False)
-    elif any(word in cat_dict[row_dict['category_name']] for word in exclude_):
+    elif any(word in cat_dict[row_dict['category_name']] for word in exclude):
         return(False)
     return(True)
 
@@ -156,8 +191,15 @@ def is_valid_sample(row_dict, parent_cat_set, countries={'BR'},
 if __name__ == '__main__':
 
     # load category information
-    cat_dict, parent_cat_set, parents_cat_mapping_dict =\
+    cat_dict, parent_cat_set, parents_cat_mapping =\
             load_categories(os.path.join(categories_file_path))
+
+    # Get valid categories to track
+    num_excluded_cat = {cat for cat in parent_cat_set
+                        for word in exclude if word in cat_dict[cat]}
+    valid_cat = parent_cat_set - num_excluded_cat
+    valid_cat_counter = defaultdict(int)  # count number of images per cat
+    ready_categories = len(valid_cat)  # count number of cat left to fill
 
     # read url image file
     f = csv.DictReader(open(image_filepath, 'r'))
@@ -168,62 +210,79 @@ if __name__ == '__main__':
     log_filepath = os.path.join(DATASET_DIR, log_file)
 
     with open(log_filepath, mode='w') as log:
-        for i, row_dict in enumerate(it.islice(f, 0, 300)):
+        num_images_saved = 0
+        for i, row_dict in enumerate(it.islice(f, 0, num_images)):
 
             # track progress
-            if i > 0 and i % 100 == 0:
-                print("Saved {} images".format(i))
+            if (i > 0) and (i % (num_images // 10) == 0):
+                print('>> Parsed images: {:>5} ({:.1%})\
+                      \tSaved images: {}'.
+                      format(i, i/num_images, num_images_saved),
+                      end='\n')
+                for cat, num in valid_cat_counter.items():
+                    print(cat, num)
 
             # check if image should be downloaded
             if not is_valid_sample(row_dict, parent_cat_set):
                 continue
 
-            # retrieve image and update title
+            # get image category
+            if use_parent_cat:
+                class_name =\
+                    cat_dict[parents_cat_mapping[row_dict['category_name']]]
+            else:
+                class_name = cat_dict[row_dict['category_name']]
+
+            # check if category has already reached image quota
+            if valid_cat_counter[class_name] >= min_per_cat:
+                continue
+
+            # get additional info
+            class_dir = os.path.join(DATASET_DIR, class_name)
+            image_title = slugify(row_dict['title']) + ".jpg"
+            
+            # Download image
             try:
                 # TODO: batch image download
                 im = image_from_url(row_dict['image']).resize((299, 299))
             except Exception as mess:
                 log.write("{}: {}".format(mess, row_dict['title']))
                 continue
-            class_name = cat_dict[row_dict['category_name']]
-            class_dir = os.path.join(DATASET_DIR, class_name)
-            image_title = slugify(row_dict['title']) + ".jpg"
 
-            # create class directory
+            # create initial target image path
             if not os.path.exists(class_dir):
                 os.makedirs(class_dir)
             im_path = os.path.join(class_dir, image_title)
 
+            # logic to handle duplicate image
+            if check_duplicates:
+                if os.path.isfile(im_path):  # if image path already exists
+                    # check if it's the same image, if not create new title
+                    # need to save image since it was changed by PIL
+                    check_im_path = os.path.join(DATASET_DIR, image_title)
+                    im.save(check_im_path)
+                    is_dup = (list(Image.open(im_path).getdata()) ==
+                              list(Image.open(check_im_path).getdata()))
+                    os.remove(check_im_path)  # image saved only for dup test
+                    if is_dup:
+                        log.write("\tduplicate image {}".format(image_title))
+                        continue  # don't save the image
+
+            # save image
+            im.save(get_unique_path(im_path))
+            # Check if category has been filled
+            valid_cat_counter[class_name] += 1
+            if valid_cat_counter[class_name] == min_per_cat:
+                ready_categories -= 1
+                # check if all categories are filled
+                if ready_categories == 0:
+                    break
+            num_images_saved += 1
             # log entry
             log.write("{}\t{}\t\t{}\n".format(
-                i, cat_dict[row_dict['category_name']], image_title))
+                num_images_saved,
+                cat_dict[row_dict['category_name']],
+                image_title))
 
-            # # logic to handle duplicate image
-            # if not os.path.isfile(im_path):  # if no image with that title
-            #     im.save(im_path)
-            # else:
-            #     # check if it's the same image, if not create new title
-            #     # need to save image since it was changed by PIL
-            #     check_im_path = os.path.join('/tmp/images_duplicates', image_title)
-            #     im.save(check_im_path)
-            #     if list(Image.open(im_path).getdata()) ==\
-            #        list(Image.open(check_im_path).getdata()):
-            #         log.write("\tduplicate image {}".format(image_title))
-            #     else:
-            #         im.save(get_unique_path(im_path))
-            # os.remove(check_im_path)
-            im.save(get_unique_path(im_path))
-
-        print("Done. Parsed {} images".format(i))
-        fcount(path=DATASET_DIR)
-
-
-# Tests
-
-# for i, row_dict in enumerate(it.islice(f, 0, 2)):
-#     print(row_dict)
-#     print(cat_dict[row_dict['category_name']])
-#     print(is_valid_sample(row_dict, parent_cat_set))
-# OrderedDict([('category_name', '5590732f531b3b92438b456d'), ('title', 'Vendo ou troco'), ('country', 'BR'), ('image', 'https://lh3.googleusercontent.com/erfxERAP-fBPlU69XogrSNvdR-prbQvnffZleXH7G-Qmf4COq_KBKjnEa3W6cCd_GmwDqX8VeAdkwoc2FbPs=s500-e365-nu?bk=FGx4i0EUTcXjnhd0s0M4MNYeQ7MTwiwLqfG7sYv8nLjKA66YkJyqkNd0pNqPrs%2BmzI3SPE5mjqvozwUfqTxT0Sr8QE5feFU9JZH5T53OckyAe2hLZ3oU8XO1b1a%2BvNwCHdo0vLhw4kqkwehJMbVLvTS1pBhAtOdeEu5OyRf4s8KCR8qOEBhrXewNkyS742jUDBmMv7ht2puk74HgFIBcboohO2agCYJLe4tdZOHpWaCQkVVD0vEAWGDDY2nrE4HDeJSx4yR%2FIB0%2BjlZHKKv52N%2BC4fEsqAjdkHzX9tjCcqobMumVw4fmAj64ImOmR4b2nWiO3TtpLc01sH%2BVn%2FIk%2FQXDUv6pKUytzipnHQA7LTCtv%2F9R9PNPvvBK8XWA%2BXAI7T2YjoJ3SzYlnGgtDHO0nnBeGcfyVegralByU9udzx%2FD6JR8JRDwKYbnMMZMLtAmYP0IrO021p3J23VKxGv0oOcr9%2BLUAAP8pZ%2F4UT9tSNaOMU%2Bjb18LRtf%2Fy2yYvxICKgdoSvZa6ZRWa1cnFMswOA%3D%3D')])
-# Fashion & Accessories - Women - Shoes
-# True
+        print("\nDone. Parsed {} images".format(i), end='\n')
+        folder_stats(path=DATASET_DIR)

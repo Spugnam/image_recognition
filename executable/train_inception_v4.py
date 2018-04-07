@@ -3,6 +3,7 @@
 import os
 import popsy_dataset
 import tensorflow as tf
+import dataset_utils
 from utils import load_batch
 from inception_v4 import inception_v4, inception_v4_arg_scope
 
@@ -10,20 +11,11 @@ from tensorflow.contrib import slim
 image_size = inception_v4.default_image_size
 
 checkpoints_dir = '/tmp/checkpoints'
+inceptioin_v4_model_path = '/tmp/checkpoints/inception_v4.ckpt'
 
 train_dir = '/tmp/inception_finetuned/'
 popsy_dataset_dir = '../data/images'
 
-# # Preliminary Steps to download inception_v4 checkpoint
-# import dataset_utils
-#
-# url = "http://download.tensorflow.org/models/inception_v4_2016_09_09.tar.gz"
-# checkpoints_dir = '/tmp/checkpoints'
-#
-# if not tf.gfile.Exists(checkpoints_dir):
-#     tf.gfile.MakeDirs(checkpoints_dir)
-#
-# dataset_utils.download_and_uncompress_tarball(url, checkpoints_dir)
 
 def get_init_fn():
     """Returns a function run by the chief worker to warm-start the training.
@@ -46,6 +38,15 @@ def get_init_fn():
         os.path.join(checkpoints_dir, 'inception_v4.ckpt'),
         variables_to_restore)
 
+
+# Preliminary Steps to download inception_v4 checkpoint
+url = "http://download.tensorflow.org/models/inception_v4_2016_09_09.tar.gz"
+checkpoints_dir = '/tmp/checkpoints'
+
+if not tf.gfile.Exists(checkpoints_dir):
+    tf.gfile.MakeDirs(checkpoints_dir)
+if not tf.gfile.Exists(inceptioin_v4_model_path):
+    dataset_utils.download_and_uncompress_tarball(url, checkpoints_dir)
 
 with tf.Graph().as_default():
     tf.logging.set_verbosity(tf.logging.INFO)
