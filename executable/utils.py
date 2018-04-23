@@ -26,7 +26,6 @@ def load_batch(dataset, batch_size=32, height=299, width=299,
     data_provider = slim.dataset_data_provider.DatasetDataProvider(
         dataset, common_queue_capacity=32, common_queue_min=8)
     image_raw, label, filename = data_provider.get(['image', 'label', 'filename'])
-    print("filename: (load_batch)", filename)
 
     # Preprocess image for usage by Inception.
     image = inception_preprocessing.preprocess_image(

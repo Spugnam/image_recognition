@@ -1,4 +1,4 @@
-#!/usr/local/bin//python3
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -30,9 +30,12 @@ flowers\
 # Parameters
 
 # number of images to parse
-num_images = 5000
+start = 600000
+num_images = 500
 # min number of images per category (for undersampling)
-min_per_cat = 5
+min_per_cat = 20
+# image size
+image_size = 299
 # prevent exact duplicate images
 check_duplicates = True
 # use parent categories
@@ -56,10 +59,14 @@ use_parent_cat = True
 exclude = ['Other', 'Estate', 'Services', 'Jobs', 'Tickets']
 
 # directories
-ROOT_DIR = ".."  # project root from file path
+# ROOT_DIR = ".."  # project root from file path
+# SCRIPT_PATH = os.path.abspath(__file__)  # i.e. popsy/executable/*.py
+# ROOT_DIR = os.path.split(SCRIPT_PATH)[0]  # popsy/executable
+dirname = os.path.dirname
+ROOT_DIR = dirname(dirname(os.path.abspath(__file__)))
 # destination folder
 DATA_DIR = "data"
-DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images/popsy")
+DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images/popsy_val")
 # source file with categories
 categories_file = "categories/categories.csv"
 categories_file_path = os.path.join(ROOT_DIR, DATA_DIR, categories_file)
@@ -190,6 +197,10 @@ def is_valid_sample(row_dict, parent_cat_set,
 
 if __name__ == '__main__':
 
+    # Create dataset directory
+    if not os.path.exists(DATASET_DIR):
+        os.makedirs(DATASET_DIR)
+
     # load category information
     cat_dict, parent_cat_set, parents_cat_mapping =\
             load_categories(os.path.join(categories_file_path))
@@ -211,7 +222,7 @@ if __name__ == '__main__':
 
     with open(log_filepath, mode='w') as log:
         num_images_saved = 0
-        for i, row_dict in enumerate(it.islice(f, 0, num_images)):
+        for i, row_dict in enumerate(it.islice(f, start, start + num_images)):
 
             # track progress
             if (i > 0) and (i % (num_images // 10) == 0):
@@ -233,18 +244,20 @@ if __name__ == '__main__':
             else:
                 class_name = cat_dict[row_dict['category_name']]
 
-            # check if category has already reached image quota
-            if valid_cat_counter[class_name] >= min_per_cat:
+            # check if category has already reached image maximum
+            # maximum = minimum for one category * 8 (subsampling theory)
+            if valid_cat_counter[class_name] >= min_per_cat * 8:
                 continue
 
             # get additional info
             class_dir = os.path.join(DATASET_DIR, class_name)
             image_title = slugify(row_dict['title']) + ".jpg"
-            
+
             # Download image
             try:
                 # TODO: batch image download
-                im = image_from_url(row_dict['image']).resize((299, 299))
+                im = image_from_url(row_dict['image']).resize((image_size,
+                                                               image_size))
             except Exception as mess:
                 log.write("{}: {}".format(mess, row_dict['title']))
                 continue

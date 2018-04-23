@@ -3,7 +3,7 @@
 """
 Apply fine-tuned inception model to own dataset
 """
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import popsy_dataset
@@ -57,10 +57,10 @@ with tf.Graph().as_default():
                 print('Title: [{}]'.format(image_title), end='\n')
                 print('Ground Truth: [{}], Prediction [{}]'.format(
                       true_name, predicted_name), end='\n')
-                # plt.figure()
-                # plt.imshow(image.astype(np.uint8))
-                # plt.title('Ground Truth: [{}], Prediction [{}]'.format(
-                #     true_name, predicted_name))
-                # plt.axis('off')
-                # plt.show()
+                plt.figure()
+                plt.imshow(image.astype(np.uint8))
+                plt.title('Ground Truth: [{}], Prediction [{}]'.format(
+                     true_name, predicted_name))
+                plt.axis('off')
+                plt.show()
             print("Total accuracy: {}", accuracy)
