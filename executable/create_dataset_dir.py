@@ -281,7 +281,15 @@ if __name__ == '__main__':
                         continue  # don't save the image
 
             # save image
-            im.save(get_unique_path(im_path))
+            try:
+                im.save(get_unique_path(im_path))
+            except OSError as mess:
+                try:
+                    # catch OSError: cannot write mode RGBA as JPEG
+                    im.convert("RGB").save(get_unique_path(im_path))
+                except Exception as mess:
+                    print(mess)
+                    continue
             # Check if category has been filled
             valid_cat_counter[class_name] += 1
             if valid_cat_counter[class_name] == min_per_cat:
