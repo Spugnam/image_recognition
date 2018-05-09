@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 from collections import defaultdict
 import csv
 from datetime import datetime
@@ -30,14 +29,14 @@ flowers\
 # Parameters
 
 # number of images to parse
-start = 600000
-num_images = 500
+start = 0
+num_images = 700000
 # min number of images per category (for undersampling)
-min_per_cat = 20
+min_per_cat = 1000
 # image size
 image_size = 299
 # prevent exact duplicate images
-check_duplicates = True
+check_duplicates = False
 # use parent categories
 use_parent_cat = True
 # parent categories
@@ -59,14 +58,14 @@ use_parent_cat = True
 exclude = ['Other', 'Estate', 'Services', 'Jobs', 'Tickets']
 
 # directories
-# ROOT_DIR = ".."  # project root from file path
-# SCRIPT_PATH = os.path.abspath(__file__)  # i.e. popsy/executable/*.py
-# ROOT_DIR = os.path.split(SCRIPT_PATH)[0]  # popsy/executable
 dirname = os.path.dirname
-ROOT_DIR = dirname(dirname(os.path.abspath(__file__)))
+ROOT_DIR = dirname(dirname(os.path.abspath(__file__)))  # popsy
 # destination folder
 DATA_DIR = "data"
-DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images/popsy_val")
+# DATASET_DIR: where to save the data
+# DATASET_DIR = os.path.join(ROOT_DIR, DATA_DIR, "images/popsy_20")
+DATASET_DIR = '/mnt/sda1/popsy_data/raw-data/train'
+
 # source file with categories
 categories_file = "categories/categories.csv"
 categories_file_path = os.path.join(ROOT_DIR, DATA_DIR, categories_file)
@@ -87,7 +86,7 @@ def folder_stats(path=DATASET_DIR):
             num_dir = len(dirs)
         if root != path:
             print("Class {:60} {:>5} images".format(os.path.basename(root),
-                                               len(files)))
+                  len(files)))
             # num_dir += len(dirs)
             num_files += len(files)
     print("number of classes: {}\
@@ -203,7 +202,7 @@ if __name__ == '__main__':
 
     # load category information
     cat_dict, parent_cat_set, parents_cat_mapping =\
-            load_categories(os.path.join(categories_file_path))
+        load_categories(os.path.join(categories_file_path))
 
     # Get valid categories to track
     num_excluded_cat = {cat for cat in parent_cat_set
@@ -228,7 +227,7 @@ if __name__ == '__main__':
             if (i > 0) and (i % (num_images // 10) == 0):
                 print('>> Parsed images: {:>5} ({:.1%})\
                       \tSaved images: {}'.
-                      format(i, i/num_images, num_images_saved),
+                      format(i, i / num_images, num_images_saved),
                       end='\n')
                 for cat, num in valid_cat_counter.items():
                     print(cat, num)
