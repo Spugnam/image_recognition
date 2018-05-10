@@ -17,19 +17,19 @@ Create dataset with below hierarchy, to be used to create tfrecords dataset
 flowers\
     flower_photos\
         tulips\
-            ....jpg
-            ....jpg
-            ....jpg
+            ....JPEG
+            ....JPEG
+            ....JPEG
         sunflowers\
-            ....jpg
+            ....JPEG
         roses\
-            ....jpg
+            ....JPEG
 """
 
 # Parameters
 
 # number of images to parse
-start = 0
+start = 100000
 num_images = 700000
 # min number of images per category (for undersampling)
 min_per_cat = 1000
@@ -238,19 +238,26 @@ if __name__ == '__main__':
 
             # get image category
             if use_parent_cat:
+                # use category_code instead of description (//imagenet)
+                # class_name =\
+                #     cat_dict[parents_cat_mapping[row_dict['category_name']]]
                 class_name =\
-                    cat_dict[parents_cat_mapping[row_dict['category_name']]]
+                    parents_cat_mapping[row_dict['category_name']]
+
             else:
-                class_name = cat_dict[row_dict['category_name']]
+                # use category code instead of description
+                # class_name = cat_dict[row_dict['category_name']]
+                class_name = row_dict['category_name']
 
             # check if category has already reached image maximum
-            # maximum = minimum for one category * 8 (subsampling theory)
-            if valid_cat_counter[class_name] >= min_per_cat * 8:
+            # maximum = minimum for one category * 3 (subsampling theory)
+            if valid_cat_counter[class_name] >= min_per_cat * 3:
                 continue
 
             # get additional info
             class_dir = os.path.join(DATASET_DIR, class_name)
-            image_title = slugify(row_dict['title']) + ".jpg"
+            prefix = class_name + "_"
+            image_title = prefix + slugify(row_dict['title']) + ".JPEG"
 
             # Download image
             try:
