@@ -11,6 +11,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import pandas as pd
+import argparse
 
 """
 Create dataset with below hierarchy, to be used to create tfrecords dataset
@@ -137,13 +138,14 @@ def get_unique_path(fname_path):
 def load_categories(file_path):
     """
     Returns:
-    Categories dictionary
+    Categories dictionary: cat_dict
         {'55906545531b3baa628b4568': 'Electronics & Computers',
          '559068f8531b3b093e8b4568': 'Electronics & Computers - Laptops',
          '55906905531b3b93438b456e': 'Electronics & Computers - TV, Video'}
-    Parent categories set
+    Parent categories set: parent_cat_set
         {'55906545531b3baa628b4568', '559068f8531b3b093e8b4568', ...}
-    parent_mapping_dict: Category ID -> Parent Category ID
+    parent_mapping_dict: parents_cat_mapping
+        Category ID -> Parent Category ID
         {'55906545531b3baa628b4568': '55906545531b3baa628b4568',
          '559068f8531b3b093e8b4568': '55906545531b3baa628b4568',
          '55906905531b3b93438b456e': '55906545531b3baa628b4568'}
@@ -175,7 +177,7 @@ def load_categories(file_path):
     return(cat_dict, parent_cat_set, parents_cat_mapping)
 
 
-def is_valid_sample(row_dict, parent_cat_set,
+def is_valid_sample(row_dict, parent_cat_set, cat_dict,
                     exclude_parents=False,
                     countries={'BR'},
                     exclude=exclude):
@@ -194,9 +196,16 @@ def is_valid_sample(row_dict, parent_cat_set,
     return(True)
 
 
-if __name__ == '__main__':
-
+def main(_):
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--image_dir',
+        type=str,
+        default='',
+        help='Path to folders of labeled images.',
+        required=True)
     # Create dataset directory
+
     if not os.path.exists(DATASET_DIR):
         os.makedirs(DATASET_DIR)
 
@@ -233,7 +242,7 @@ if __name__ == '__main__':
                     print(cat, num)
 
             # check if image should be downloaded
-            if not is_valid_sample(row_dict, parent_cat_set):
+            if not is_valid_sample(row_dict, parent_cat_set, cat_dict):
                 continue
 
             # get image category
@@ -313,3 +322,7 @@ if __name__ == '__main__':
 
         print("\nDone. Parsed {} images".format(i), end='\n')
         folder_stats(path=DATASET_DIR)
+
+
+if __name__ == '__main__':
+    main()
